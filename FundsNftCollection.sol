@@ -216,7 +216,7 @@ contract FundsNftCollection is ERC1155,Ownable,Pausable {
         require (FundsVerifiedUsers(VerifiedUserContractAddress).isUserVerified(msg.sender) == true,"Please Verify from dapp");
         require(_owner == super.owner(),"Owner address is not correct");
         require(msg.value == nfts[_id].nftFees,"Need fees for minting a nft.");
-        require (balances[_id]+_quantity  <= nfts[_id].totalSupply ,"can not mint more then total supply.");
+        require (balances[_id]+_quantity  <= nfts[_id].totalSupply ,"can not mint more than total supply.");
         require (FToken(ERC20ContractAddress).balanceOf(msg.sender)  >= fundAmount ,"Allowed funds is not sufficient for mint.");
         if(msg.value > 0) {
             _owner.transfer(msg.value);
