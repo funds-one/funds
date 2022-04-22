@@ -67,6 +67,10 @@ contract FundsNftCollection is ERC1155,Ownable,Pausable {
     
     address public ERC20ContractAddress = address(0);
     address public VerifiedUserContractAddress = address(0);
+
+    address public FeesCollectionAddress = address(0);
+    address public FundsCollectionAddress = address(0);
+
     bytes32 SetterRole;
     bytes32 AdminRole;
     
@@ -87,8 +91,9 @@ contract FundsNftCollection is ERC1155,Ownable,Pausable {
   /***********************************|
   |             Constuctor            |
   |__________________________________*/
-    constructor() ERC1155("") {
-      
+    constructor() ERC1155("Funds NFT Collection") {
+      FeesCollectionAddress = msg.sender;
+      FundsCollectionAddress = msg.sender;
     }
 
 
@@ -99,6 +104,17 @@ contract FundsNftCollection is ERC1155,Ownable,Pausable {
                 (owner() == msg.sender == true)) ,"Only Owner or admins allowed");
                 _;
     }
+
+    // Set Fees Collection Address for Funds
+    function setFeesCollectionAddress(address _feesCollectionAddress) public virtual onlyOwner{
+        FeesCollectionAddress = _feesCollectionAddress;         
+    }
+
+    // Set Contract Address for Funds
+    function setFundsCollectionAddress(address _fundsCollectionAddress) public virtual onlyOwner{
+        FundsCollectionAddress = _fundsCollectionAddress;         
+    }
+
 
     // Set Contract Address for Funds
     function setTokenContractAddress(address fundsContract) public virtual onlyOwner{
@@ -201,12 +217,13 @@ contract FundsNftCollection is ERC1155,Ownable,Pausable {
         return (_quantity*nfts[_nftId].nftPrice ,_quantity*nfts[_nftId].nftFees);
     }
 
+
+
      
     // Mint a NFT
     function mint(
         uint256 _id,
-        uint256 _quantity,
-        address payable _owner,
+        uint256 _quantity,        
         bytes memory _data
     ) payable public virtual {
         uint fundAmount = _quantity*nfts[_id].nftPrice;
@@ -215,12 +232,12 @@ contract FundsNftCollection is ERC1155,Ownable,Pausable {
         require(ERC20ContractAddress != address(0),"Token contract address not added");
         require(_quantity  <= nfts[_id].totalSupply ,"minting quantity not more then totalSupply.");
         require (FundsVerifiedUsers(VerifiedUserContractAddress).isUserVerified(msg.sender) == true,"Please Verify from dapp");
-        require(_owner == super.owner(),"Owner address is not correct");
+        // require(_owner == super.owner(),"Owner address is not correct");
         require(msg.value == nfts[_id].nftFees,"Need fees for minting a nft.");
         require (balances[_id]+_quantity  <= nfts[_id].totalSupply ,"can not mint more than total supply.");
         require (FToken(ERC20ContractAddress).balanceOf(msg.sender)  >= fundAmount ,"Allowed funds is not sufficient for mint.");
         if(msg.value > 0) {
-            _owner.transfer(msg.value);
+            payable(FeesCollectionAddress).transfer(msg.value);
         }
 
         balances[_id] += _quantity;
@@ -228,7 +245,7 @@ contract FundsNftCollection is ERC1155,Ownable,Pausable {
         //     totalMinted = balances[_id];
         // }
         
-        FToken(ERC20ContractAddress).transferFrom(msg.sender,super.owner(),fundAmount);
+        FToken(ERC20ContractAddress).transferFrom(msg.sender,FundsCollectionAddress,fundAmount);
         _mint(msg.sender, _id, _quantity, _data);
     }
 
